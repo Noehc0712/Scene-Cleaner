@@ -13,6 +13,7 @@ public sealed class CCTVSwitcher : MonoBehaviour
     private Camera secondCamera;
     private Camera thirdCamera;
     private Camera fourthCamera;
+    private CCTVStaticTransition staticTransition;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void CreateAutomatically()
@@ -26,6 +27,7 @@ public sealed class CCTVSwitcher : MonoBehaviour
 
     private void Start()
     {
+        staticTransition = FindFirstObjectByType<CCTVStaticTransition>();
         firstCamera = FindSceneCamera(FirstCameraName);
         secondCamera = FindSceneCamera(SecondCameraName);
         thirdCamera = FindSceneCamera(ThirdCameraName);
@@ -52,23 +54,32 @@ public sealed class CCTVSwitcher : MonoBehaviour
         if (Keyboard.current.digit1Key.wasPressedThisFrame ||
             Keyboard.current.numpad1Key.wasPressedThisFrame)
         {
-            SwitchTo(firstCamera);
+            RequestSwitch(firstCamera);
         }
         else if (Keyboard.current.digit2Key.wasPressedThisFrame ||
                  Keyboard.current.numpad2Key.wasPressedThisFrame)
         {
-            SwitchTo(secondCamera);
+            RequestSwitch(secondCamera);
         }
         else if (Keyboard.current.digit3Key.wasPressedThisFrame ||
                  Keyboard.current.numpad3Key.wasPressedThisFrame)
         {
-            SwitchTo(thirdCamera);
+            RequestSwitch(thirdCamera);
         }
         else if (Keyboard.current.digit4Key.wasPressedThisFrame ||
                  Keyboard.current.numpad4Key.wasPressedThisFrame)
         {
-            SwitchTo(fourthCamera);
+            RequestSwitch(fourthCamera);
         }
+    }
+
+    private void RequestSwitch(Camera target)
+    {
+        if (target == null || target.gameObject.activeInHierarchy)
+            return;
+
+        if (staticTransition == null || !staticTransition.Play(() => SwitchTo(target)))
+            SwitchTo(target);
     }
 
     private void SwitchTo(Camera target)
@@ -90,7 +101,10 @@ public sealed class CCTVSwitcher : MonoBehaviour
         camera.gameObject.SetActive(active);
         camera.enabled = active;
 
-        if (camera.TryGetComponent<AudioListener>(out var listener))
+        if (!camera.TryGetComponent<AudioListener>(out var listener) && active)
+            listener = camera.gameObject.AddComponent<AudioListener>();
+
+        if (listener != null)
             listener.enabled = active;
     }
 
