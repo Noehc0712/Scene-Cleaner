@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -15,10 +16,34 @@ public sealed class CCTVSwitcher : MonoBehaviour
     private Camera fourthCamera;
     private CCTVStaticTransition staticTransition;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void CreateAutomatically()
+    public static event Action<int> ActiveCameraChanged;
+    public static int CurrentCameraNumber { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void RegisterSceneLoadedCallback()
     {
-        if (FindFirstObjectByType<CCTVSwitcher>() != null)
+        // Remove first so entering Play Mode with domain reload disabled
+        // cannot register the same callback more than once.
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void CreateForInitialScene()
+    {
+        TryCreateForLoadedScene();
+    }
+
+    private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        TryCreateForLoadedScene();
+    }
+
+    private static void TryCreateForLoadedScene()
+    {
+        if (FindAnyObjectByType<CCTVSwitcher>() != null ||
+            FindSceneCamera(FirstCameraName) == null ||
+            FindSceneCamera(SecondCameraName) == null)
             return;
 
         var controller = new GameObject(nameof(CCTVSwitcher));
@@ -27,7 +52,7 @@ public sealed class CCTVSwitcher : MonoBehaviour
 
     private void Start()
     {
-        staticTransition = FindFirstObjectByType<CCTVStaticTransition>();
+        staticTransition = FindAnyObjectByType<CCTVStaticTransition>();
         firstCamera = FindSceneCamera(FirstCameraName);
         secondCamera = FindSceneCamera(SecondCameraName);
         thirdCamera = FindSceneCamera(ThirdCameraName);
@@ -91,6 +116,27 @@ public sealed class CCTVSwitcher : MonoBehaviour
         SetCameraActive(secondCamera, target == secondCamera);
         SetCameraActive(thirdCamera, target == thirdCamera);
         SetCameraActive(fourthCamera, target == fourthCamera);
+
+        int cameraNumber = GetCameraNumber(target);
+        if (cameraNumber != CurrentCameraNumber)
+        {
+            CurrentCameraNumber = cameraNumber;
+            ActiveCameraChanged?.Invoke(CurrentCameraNumber);
+        }
+    }
+
+    private int GetCameraNumber(Camera camera)
+    {
+        if (camera == firstCamera)
+            return 1;
+        if (camera == secondCamera)
+            return 2;
+        if (camera == thirdCamera)
+            return 3;
+        if (camera == fourthCamera)
+            return 4;
+
+        return 0;
     }
 
     private static void SetCameraActive(Camera camera, bool active)
@@ -141,5 +187,10 @@ public sealed class CCTVSwitcher : MonoBehaviour
     {
         Scene scene = gameObject.scene;
         return scene.IsValid() && scene.isLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        CurrentCameraNumber = 0;
     }
 }
