@@ -1233,6 +1233,98 @@ Transform:
   - {fileID: 124130119}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &838586973
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 838586975}
+  - component: {fileID: 838586974}
+  m_Layer: 0
+  m_Name: Player Action Recorder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &838586974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838586973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 364d9c9d284034e449eb8619379239cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerActionRecorder
+  currentRound: 1
+  investigationRecords: []
+  testHideZone: {fileID: 17254624}
+  testResultType: 2
+--- !u!4 &838586975
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838586973}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.28649, y: 0, z: 1.57091}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &967801967
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 967801969}
+  - component: {fileID: 967801968}
+  m_Layer: 0
+  m_Name: AI Round Reset Controller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &967801968
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967801967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2250a4c0f58c14cbfc6e996da44ebe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AIRoundResetController
+--- !u!4 &967801969
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967801967}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.28649, y: 0, z: 1.57091}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1072404673
 GameObject:
   m_ObjectHideFlags: 0
@@ -1945,8 +2037,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b72d80d10b232234696dcd34f7cca811, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIHideController
-  targetEvidence: {fileID: 1202852850}
-  targetHideZoneId: hide_zone_02
+  testEvidence: {fileID: 0}
+  testHideZoneId: hide_zone_01
 --- !u!4 &1680566732
 Transform:
   m_ObjectHideFlags: 0
@@ -2967,3 +3059,5 @@ SceneRoots:
   - {fileID: 1072404675}
   - {fileID: 1680566732}
   - {fileID: 444899321}
+  - {fileID: 967801969}
+  - {fileID: 838586975}

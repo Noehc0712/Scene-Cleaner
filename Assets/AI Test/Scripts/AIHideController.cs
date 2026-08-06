@@ -5,39 +5,22 @@ using UnityEngine;
 
 public class AIHideController : MonoBehaviour
 {
-    [Header("수동 테스트용")]
+    [Header("수동 배치 테스트")]
 
     [SerializeField]
-    private EvidenceObject targetEvidence;
+    private EvidenceObject testEvidence;
 
     [SerializeField]
-    private string targetHideZoneId = "hide_zone_02";
+    private string testHideZoneId = "hide_zone_01";
 
     /// <summary>
-    /// Gemini가 만든 전체 숨김 계획을 검사한 뒤
-    /// 씬의 증거물에 실제로 적용한다.
+    /// Gemini가 생성한 숨김 계획을 검사하고 적용한다.
+    ///
+    /// 모든 계획을 먼저 검사하며,
+    /// 하나라도 잘못되어 있으면 어떤 물건도 이동시키지 않는다.
     /// </summary>
     public bool ApplyHidePlan(AIHidePlan plan)
     {
-        if (plan == null)
-        {
-            Debug.LogError(
-                "적용할 AI 숨김 계획이 없습니다."
-            );
-
-            return false;
-        }
-
-        if (plan.assignments == null ||
-            plan.assignments.Length == 0)
-        {
-            Debug.LogError(
-                "AI 숨김 계획에 배치 정보가 없습니다."
-            );
-
-            return false;
-        }
-
         EvidenceObject[] evidenceObjects =
             FindObjectsByType<EvidenceObject>(
                 FindObjectsSortMode.None
@@ -49,37 +32,45 @@ public class AIHideController : MonoBehaviour
             );
 
         Dictionary<string, EvidenceObject> evidenceById =
-            BuildEvidenceDictionary(evidenceObjects);
+            CreateEvidenceDictionary(evidenceObjects);
 
         Dictionary<string, HideZone> hideZoneById =
-            BuildHideZoneDictionary(hideZones);
+            CreateHideZoneDictionary(hideZones);
 
-        if (evidenceById == null ||
-            hideZoneById == null)
+        if (evidenceById == null || hideZoneById == null)
         {
             return false;
         }
 
-        if (!ValidatePlan(
+        /*
+         * 실제 오브젝트를 이동하기 전에
+         * Gemini의 계획 전체를 먼저 검사한다.
+         */
+        if (!ValidateEntirePlan(
                 plan,
                 evidenceById,
                 hideZoneById
             ))
         {
+            Debug.LogError(
+                "Gemini 숨김 계획 검증에 실패했습니다.\n" +
+                "어떤 증거물도 이동하지 않았습니다."
+            );
+
             return false;
         }
 
-        StringBuilder resultBuilder =
-            new StringBuilder();
+        /*
+         * 전체 검증을 통과한 뒤에만
+         * 실제 배치를 시작한다.
+         */
+        StringBuilder resultLog = new StringBuilder();
 
-        resultBuilder.AppendLine(
+        resultLog.AppendLine(
             "=== Gemini 숨김 계획 적용 결과 ==="
         );
 
-        foreach (
-            AIHideAssignment assignment
-            in plan.assignments
-        )
+        foreach (AIHideAssignment assignment in plan.assignments)
         {
             EvidenceObject evidence =
                 evidenceById[assignment.evidenceId];
@@ -87,148 +78,264 @@ public class AIHideController : MonoBehaviour
             HideZone zone =
                 hideZoneById[assignment.hideZoneId];
 
-            bool hideSucceeded =
-                evidence.HideAt(zone);
+            bool wasHidden = evidence.HideAt(zone);
 
-            if (!hideSucceeded)
+            if (!wasHidden)
             {
                 Debug.LogError(
-                    "Gemini 숨김 계획 적용 중 실패했습니다.\n" +
-                    $"물건 ID: {assignment.evidenceId}\n" +
+                    "검증은 통과했지만 실제 배치 중 오류가 발생했습니다.\n" +
+                    $"증거물 ID: {assignment.evidenceId}\n" +
                     $"장소 ID: {assignment.hideZoneId}"
                 );
 
                 return false;
             }
 
-            resultBuilder.AppendLine(
+            resultLog.AppendLine(
                 $"- {evidence.EvidenceName}"
             );
 
-            resultBuilder.AppendLine(
+            resultLog.AppendLine(
                 $"  선택 장소: {zone.ZoneName}"
             );
 
-            resultBuilder.AppendLine(
+            resultLog.AppendLine(
                 $"  장소 ID: {zone.ZoneId}"
             );
         }
 
+        Debug.Log(resultLog.ToString());
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gemini가 반환한 숨김 계획 전체를 검사한다.
+    /// 이 함수에서는 오브젝트를 이동하지 않는다.
+    /// </summary>
+    private bool ValidateEntirePlan(
+        AIHidePlan plan,
+        Dictionary<string, EvidenceObject> evidenceById,
+        Dictionary<string, HideZone> hideZoneById
+    )
+    {
+        if (plan == null)
+        {
+            Debug.LogError(
+                "Gemini 숨김 계획이 null입니다."
+            );
+
+            return false;
+        }
+
+        if (plan.assignments == null)
+        {
+            Debug.LogError(
+                "Gemini 응답에 assignments 목록이 없습니다."
+            );
+
+            return false;
+        }
+
+        if (plan.assignments.Length != evidenceById.Count)
+{
+    Debug.LogError(
+        "Gemini가 반환한 배치 개수가 올바르지 않습니다.\n" +
+        $"씬의 증거물 수: {evidenceById.Count}\n" +
+        $"반환된 배치 수: {plan.assignments.Length}"
+    );
+
+    return false;
+}
+
+        HashSet<string> usedEvidenceIds =
+            new HashSet<string>();
+
+        HashSet<string> usedHideZoneIds =
+            new HashSet<string>();
+
+        foreach (AIHideAssignment assignment in plan.assignments)
+        {
+            if (assignment == null)
+            {
+                Debug.LogError(
+                    "Gemini 계획에 비어 있는 배치 항목이 있습니다."
+                );
+
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    assignment.evidenceId
+                ))
+            {
+                Debug.LogError(
+                    "Evidence ID가 비어 있는 배치 항목이 있습니다."
+                );
+
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    assignment.hideZoneId
+                ))
+            {
+                Debug.LogError(
+                    "HideZone ID가 비어 있는 배치 항목이 있습니다."
+                );
+
+                return false;
+            }
+
+            /*
+             * 같은 증거물이 두 번 배치되는지 검사한다.
+             */
+            if (!usedEvidenceIds.Add(
+                    assignment.evidenceId
+                ))
+            {
+                Debug.LogError(
+                    "같은 증거물이 두 번 이상 배치되었습니다.\n" +
+                    $"중복 Evidence ID: {assignment.evidenceId}"
+                );
+
+                return false;
+            }
+
+            /*
+             * 같은 HideZone을 두 번 사용하는지 검사한다.
+             */
+            if (!usedHideZoneIds.Add(
+                    assignment.hideZoneId
+                ))
+            {
+                Debug.LogError(
+                    "같은 HideZone이 두 번 이상 선택되었습니다.\n" +
+                    $"중복 HideZone ID: {assignment.hideZoneId}"
+                );
+
+                return false;
+            }
+
+            /*
+             * 실제 씬에 존재하는 Evidence ID인지 확인한다.
+             */
+            if (!evidenceById.TryGetValue(
+                    assignment.evidenceId,
+                    out EvidenceObject evidence
+                ))
+            {
+                Debug.LogError(
+                    "씬에 존재하지 않는 Evidence ID입니다.\n" +
+                    $"잘못된 ID: {assignment.evidenceId}"
+                );
+
+                return false;
+            }
+
+            /*
+             * 실제 씬에 존재하는 HideZone ID인지 확인한다.
+             */
+            if (!hideZoneById.TryGetValue(
+                    assignment.hideZoneId,
+                    out HideZone zone
+                ))
+            {
+                Debug.LogError(
+                    "씬에 존재하지 않는 HideZone ID입니다.\n" +
+                    $"잘못된 ID: {assignment.hideZoneId}"
+                );
+
+                return false;
+            }
+
+            if (zone.HidePoint == null)
+            {
+                Debug.LogError(
+                    "HidePoint가 연결되지 않은 장소가 선택되었습니다.\n" +
+                    $"장소: {zone.ZoneName}\n" +
+                    $"장소 ID: {zone.ZoneId}"
+                );
+
+                return false;
+            }
+
+            if (zone.IsOccupied)
+            {
+                Debug.LogError(
+                    "이미 사용 중인 HideZone이 선택되었습니다.\n" +
+                    $"장소: {zone.ZoneName}\n" +
+                    $"장소 ID: {zone.ZoneId}"
+                );
+
+                return false;
+            }
+
+            /*
+             * PhysicalObject와 SurfaceTrace 조건을 검사한다.
+             */
+            if (!zone.SupportsPlacementType(
+                    evidence.PlacementType
+                ))
+            {
+                Debug.LogError(
+                    "=== 숨김 계획 배치 형태 불일치 ===\n" +
+                    $"증거물: {evidence.EvidenceName}\n" +
+                    $"증거물 ID: {evidence.EvidenceId}\n" +
+                    $"배치 형태: {evidence.PlacementType}\n" +
+                    $"선택 장소: {zone.ZoneName}\n" +
+                    $"장소 ID: {zone.ZoneId}"
+                );
+
+                return false;
+            }
+        }
+
+        /*
+         * 모든 EvidenceObject가 계획에 정확히 포함됐는지 확인한다.
+         */
+        foreach (string evidenceId in evidenceById.Keys)
+        {
+            if (!usedEvidenceIds.Contains(evidenceId))
+            {
+                Debug.LogError(
+                    "Gemini 계획에서 누락된 증거물이 있습니다.\n" +
+                    $"누락 Evidence ID: {evidenceId}"
+                );
+
+                return false;
+            }
+        }
+
         Debug.Log(
-            resultBuilder.ToString().Trim()
+            "=== Gemini 숨김 계획 전체 검증 성공 ===\n" +
+            $"증거물 수: {usedEvidenceIds.Count}\n" +
+            $"사용 장소 수: {usedHideZoneIds.Count}\n" +
+            "모든 ID, 중복 여부, 배치 형태와 장소 상태가 정상입니다."
         );
 
         return true;
     }
 
     /// <summary>
-    /// 물건 ID와 장소 ID를 전달받아
-    /// 해당 물건 하나를 숨긴다.
-    /// </summary>
-    public bool HideEvidenceByIds(
-        string evidenceId,
-        string hideZoneId
-    )
-    {
-        EvidenceObject evidence =
-            FindEvidenceById(evidenceId);
-
-        if (evidence == null)
-        {
-            Debug.LogError(
-                $"ID가 '{evidenceId}'인 " +
-                "EvidenceObject를 찾지 못했습니다."
-            );
-
-            return false;
-        }
-
-        return HideEvidenceByZoneId(
-            evidence,
-            hideZoneId
-        );
-    }
-
-    /// <summary>
-    /// 지정한 EvidenceObject를
-    /// HideZone ID에 해당하는 위치로 숨긴다.
-    /// </summary>
-    public bool HideEvidenceByZoneId(
-        EvidenceObject evidence,
-        string hideZoneId
-    )
-    {
-        if (evidence == null)
-        {
-            Debug.LogError(
-                "숨길 EvidenceObject가 연결되지 않았습니다."
-            );
-
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(hideZoneId))
-        {
-            Debug.LogError(
-                "숨김 장소 ID가 비어 있습니다."
-            );
-
-            return false;
-        }
-
-        HideZone targetZone =
-            FindHideZoneById(hideZoneId);
-
-        if (targetZone == null)
-        {
-            Debug.LogError(
-                $"ID가 '{hideZoneId}'인 " +
-                "HideZone을 찾지 못했습니다."
-            );
-
-            return false;
-        }
-
-        bool hideSucceeded =
-            evidence.HideAt(targetZone);
-
-        if (!hideSucceeded)
-        {
-            Debug.LogError(
-                $"{evidence.EvidenceName} 숨기기에 실패했습니다."
-            );
-
-            return false;
-        }
-
-        Debug.Log(
-            "=== 숨김 장소 ID 적용 성공 ===\n" +
-            $"증거물: {evidence.EvidenceName}\n" +
-            $"전달받은 ID: {hideZoneId}\n" +
-            $"선택된 장소: {targetZone.ZoneName}"
-        );
-
-        return true;
-    }
-
-    /// <summary>
-    /// 씬의 증거물을 Evidence ID 기준으로 정리한다.
+    /// Evidence ID로 EvidenceObject를 찾을 수 있도록
+    /// 사전 형태로 정리한다.
     /// </summary>
     private Dictionary<string, EvidenceObject>
-        BuildEvidenceDictionary(
+        CreateEvidenceDictionary(
             EvidenceObject[] evidenceObjects
         )
     {
-        Dictionary<string, EvidenceObject> result =
-            new Dictionary<string, EvidenceObject>(
-                StringComparer.Ordinal
-            );
+        Dictionary<string, EvidenceObject> dictionary =
+            new Dictionary<string, EvidenceObject>();
 
-        foreach (
-            EvidenceObject evidence
-            in evidenceObjects
-        )
+        foreach (EvidenceObject evidence in evidenceObjects)
         {
+            if (evidence == null)
+            {
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(
                     evidence.EvidenceId
                 ))
@@ -241,45 +348,43 @@ public class AIHideController : MonoBehaviour
                 return null;
             }
 
-            if (result.ContainsKey(
-                    evidence.EvidenceId
+            if (!dictionary.TryAdd(
+                    evidence.EvidenceId,
+                    evidence
                 ))
             {
                 Debug.LogError(
-                    "중복된 Evidence ID가 있습니다: " +
-                    evidence.EvidenceId
+                    "씬에 중복된 Evidence ID가 있습니다.\n" +
+                    $"중복 ID: {evidence.EvidenceId}"
                 );
 
                 return null;
             }
-
-            result.Add(
-                evidence.EvidenceId,
-                evidence
-            );
         }
 
-        return result;
+        return dictionary;
     }
 
     /// <summary>
-    /// 씬의 숨김 장소를 Zone ID 기준으로 정리한다.
+    /// Zone ID로 HideZone을 찾을 수 있도록
+    /// 사전 형태로 정리한다.
     /// </summary>
     private Dictionary<string, HideZone>
-        BuildHideZoneDictionary(
+        CreateHideZoneDictionary(
             HideZone[] hideZones
         )
     {
-        Dictionary<string, HideZone> result =
-            new Dictionary<string, HideZone>(
-                StringComparer.Ordinal
-            );
+        Dictionary<string, HideZone> dictionary =
+            new Dictionary<string, HideZone>();
 
         foreach (HideZone zone in hideZones)
         {
-            if (string.IsNullOrWhiteSpace(
-                    zone.ZoneId
-                ))
+            if (zone == null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(zone.ZoneId))
             {
                 Debug.LogError(
                     $"{zone.gameObject.name}의 " +
@@ -289,193 +394,41 @@ public class AIHideController : MonoBehaviour
                 return null;
             }
 
-            if (result.ContainsKey(zone.ZoneId))
+            if (!dictionary.TryAdd(
+                    zone.ZoneId,
+                    zone
+                ))
             {
                 Debug.LogError(
-                    "중복된 HideZone ID가 있습니다: " +
-                    zone.ZoneId
+                    "씬에 중복된 HideZone ID가 있습니다.\n" +
+                    $"중복 ID: {zone.ZoneId}"
                 );
 
                 return null;
             }
-
-            result.Add(
-                zone.ZoneId,
-                zone
-            );
         }
 
-        return result;
+        return dictionary;
     }
 
     /// <summary>
-    /// AI가 반환한 ID들이 실제로 존재하는지,
-    /// 같은 물건이나 장소가 중복되지 않았는지 검사한다.
+    /// EvidenceObject 하나를 Zone ID로 직접 숨기는
+    /// 수동 테스트 기능이다.
     /// </summary>
-    private bool ValidatePlan(
-        AIHidePlan plan,
-        Dictionary<string, EvidenceObject> evidenceById,
-        Dictionary<string, HideZone> hideZoneById
+    public bool HideEvidenceByZoneId(
+        EvidenceObject evidence,
+        string hideZoneId
     )
     {
-        if (plan.assignments.Length !=
-            evidenceById.Count)
+        if (evidence == null)
         {
             Debug.LogError(
-                "Gemini가 모든 물건의 숨김 장소를 " +
-                "지정하지 않았습니다.\n" +
-                $"씬의 물건 수: {evidenceById.Count}\n" +
-                $"응답의 배치 수: {plan.assignments.Length}"
+                "수동 테스트할 EvidenceObject가 없습니다."
             );
 
             return false;
         }
 
-        HashSet<string> usedEvidenceIds =
-            new HashSet<string>(
-                StringComparer.Ordinal
-            );
-
-        HashSet<string> usedHideZoneIds =
-            new HashSet<string>(
-                StringComparer.Ordinal
-            );
-
-        foreach (
-            AIHideAssignment assignment
-            in plan.assignments
-        )
-        {
-            if (assignment == null)
-            {
-                Debug.LogError(
-                    "Gemini 응답에 비어 있는 배치 정보가 있습니다."
-                );
-
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                    assignment.evidenceId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini 응답의 evidenceId가 비어 있습니다."
-                );
-
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                    assignment.hideZoneId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini 응답의 hideZoneId가 비어 있습니다."
-                );
-
-                return false;
-            }
-
-            if (!evidenceById.ContainsKey(
-                    assignment.evidenceId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini가 존재하지 않는 " +
-                    "Evidence ID를 반환했습니다: " +
-                    assignment.evidenceId
-                );
-
-                return false;
-            }
-
-            if (!hideZoneById.ContainsKey(
-                    assignment.hideZoneId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini가 존재하지 않는 " +
-                    "HideZone ID를 반환했습니다: " +
-                    assignment.hideZoneId
-                );
-
-                return false;
-            }
-
-            if (!usedEvidenceIds.Add(
-                    assignment.evidenceId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini가 같은 물건을 " +
-                    "두 번 배치했습니다: " +
-                    assignment.evidenceId
-                );
-
-                return false;
-            }
-
-            if (!usedHideZoneIds.Add(
-                    assignment.hideZoneId
-                ))
-            {
-                Debug.LogError(
-                    "Gemini가 같은 숨김 장소를 " +
-                    "두 번 선택했습니다: " +
-                    assignment.hideZoneId
-                );
-
-                return false;
-            }
-
-            HideZone selectedZone =
-                hideZoneById[
-                    assignment.hideZoneId
-                ];
-
-            if (selectedZone.IsOccupied)
-            {
-                Debug.LogError(
-                    "Gemini가 이미 사용 중인 장소를 " +
-                    "선택했습니다: " +
-                    selectedZone.ZoneId
-                );
-
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private EvidenceObject FindEvidenceById(
-        string evidenceId
-    )
-    {
-        EvidenceObject[] evidenceObjects =
-            FindObjectsByType<EvidenceObject>(
-                FindObjectsSortMode.None
-            );
-
-        foreach (
-            EvidenceObject evidence
-            in evidenceObjects
-        )
-        {
-            if (evidence.EvidenceId == evidenceId)
-            {
-                return evidence;
-            }
-        }
-
-        return null;
-    }
-
-    private HideZone FindHideZoneById(
-        string hideZoneId
-    )
-    {
         HideZone[] hideZones =
             FindObjectsByType<HideZone>(
                 FindObjectsSortMode.None
@@ -485,22 +438,24 @@ public class AIHideController : MonoBehaviour
         {
             if (zone.ZoneId == hideZoneId)
             {
-                return zone;
+                return evidence.HideAt(zone);
             }
         }
 
-        return null;
+        Debug.LogError(
+            "입력한 ID와 일치하는 HideZone이 없습니다.\n" +
+            $"입력 ID: {hideZoneId}"
+        );
+
+        return false;
     }
 
-    /// <summary>
-    /// 기존의 수동 ID 테스트 기능이다.
-    /// </summary>
-    [ContextMenu("ID로 증거물 숨기기 테스트")]
-    private void HideEvidenceForTest()
+    [ContextMenu("수동 숨김 테스트")]
+    private void RunManualHideTest()
     {
         HideEvidenceByZoneId(
-            targetEvidence,
-            targetHideZoneId
+            testEvidence,
+            testHideZoneId
         );
     }
 }
