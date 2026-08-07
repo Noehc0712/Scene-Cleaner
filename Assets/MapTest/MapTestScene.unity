@@ -1458,9 +1458,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uCE68\uB300"
   isCrimeEvidence: 0
-  resultDescription: "\uC561\uC815\uC774 \uAE68\uC9C4 \uD734\uB300\uD3F0\uC774\uB2E4.\n\uC0AC\uAC74\uACFC\uB294
-    \uAD00\uACC4\uC5C6\uB294 \uAC83 \uAC19\uB2E4."
-  resultImage: {fileID: 21300000, guid: 1d0964bea97044e45b9c890511f064a4, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -1614,9 +1613,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uCC45\uC7A5"
   isCrimeEvidence: 1
-  resultDescription: "\uB9D0\uB77C\uBD99\uC740 \uD53C\uAC00 \uBB3B\uC5B4 \uC788\uB2E4.\n\uC774\uAC74
-    \uBC94\uC8C4 \uD754\uC801\uC774 \uBD84\uBA85\uD558\uB2E4."
-  resultImage: {fileID: 21300000, guid: 3e988981398b20849a85cb437ce3b282, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -2474,9 +2472,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uC11C\uB78D"
   isCrimeEvidence: 1
-  resultDescription: "\uACB0\uC815\uC801\uC778 \uB2E8\uC11C\uB97C \uCC3E\uC558\uB2E4.\n\uD53C\uD574\uC790\uC758
-    \uD53C\uAC00 \uBB3B\uC5B4\uC788\uB2E4."
-  resultImage: {fileID: 21300000, guid: eafb5931359f80147902e51e48df2600, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -4609,8 +4606,47 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1686866358365567155, guid: de339d85e14094f7693e0dce24f5b320, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1000008150}
   m_SourcePrefab: {fileID: 100100000, guid: de339d85e14094f7693e0dce24f5b320, type: 3}
+--- !u!1 &1000008149 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1686866358365567155, guid: de339d85e14094f7693e0dce24f5b320, type: 3}
+  m_PrefabInstance: {fileID: 1000008148}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1000008150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000008149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2240132dd16047d2997577a739d4e65c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
+  displayName: "\uC758\uC790"
+  isCrimeEvidence: 0
+  resultDescription: 
+  resultImage: {fileID: 0}
+  onClicked:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1013797458
 GameObject:
   m_ObjectHideFlags: 0
@@ -5273,9 +5309,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uC11C\uB78D"
   isCrimeEvidence: 1
-  resultDescription: "\uC11C\uB78D\uC7A5 \uC606\uBA74\uC774 \uAC70\uCE60\uAC8C \uAE01\uD600
-    \uC788\uB2E4.\n\uB2E8\uC11C\uAC00 \uB420 \uAC83 \uAC19\uB2E4."
-  resultImage: {fileID: 21300000, guid: 0af21944d0649254db580a41d6fae1a5, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -7969,7 +8004,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uCEF4\uD4E8\uD130 \uCC45\uC0C1"
   isCrimeEvidence: 0
-  resultDescription: "\uC544\uBB34\uAC83\uB3C4\uC5C6\uB2E4.."
+  resultDescription: 
   resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
@@ -8010,9 +8045,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uCC2C\uC7A5"
   isCrimeEvidence: 1
-  resultDescription: "\uCDA9\uACA9\uC744 \uBC1B\uC544 \uC0B0\uC0B0\uC774 \uAE68\uC84C\uB2E4.\n\uB2E8\uC21C\uD788
-    \uB5A8\uC5B4\uB728\uB9B0 \uAC83 \uAC19\uC9C0\uB294 \uC54A\uB2E4."
-  resultImage: {fileID: 21300000, guid: 3bd162f13025b5b40a51b18cd2939c0e, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -9641,8 +9675,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uC11C\uB78D"
   isCrimeEvidence: 0
-  resultDescription: "\uADF8\uB0E5 \uB2F4\uBC30\uAF41\uCD08\uB2E4...\n"
-  resultImage: {fileID: 21300000, guid: 9bfd8e5fdfae0624a9ecb7b7f3a9fcf2, type: 3}
+  resultDescription: 
+  resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -10697,11 +10731,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CCTVInteractable
   displayName: "\uC624\uBE10"
   isCrimeEvidence: 0
-  resultDescription: "\uC544\uBB34\uAC83\uB3C4 \uC5C6\uB2E4..."
+  resultDescription: 
   resultImage: {fileID: 0}
   onClicked:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2052921413
 GameObject:
   m_ObjectHideFlags: 0

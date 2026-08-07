@@ -17,6 +17,9 @@ public sealed class MainMenuUI : MonoBehaviour
     [SerializeField] private GameObject settingsPanel;
     [SerializeField, Range(0f, 1f)] private float settingsBackdropOpacity = 0.88f;
 
+    [Header("Game Description")]
+    [SerializeField] private Texture descriptionPaperTexture;
+
     private void Awake()
     {
         GameAudioManager.ConfigurePersistentAudio(
@@ -24,6 +27,21 @@ public sealed class MainMenuUI : MonoBehaviour
             buttonClickSound,
             backgroundMusicVolume,
             buttonClickVolume);
+
+        ConfigureGameDescription();
+    }
+
+    private void ConfigureGameDescription()
+    {
+        if (descriptionPanel == null)
+            return;
+
+        GameDescriptionUI descriptionUI =
+            descriptionPanel.GetComponent<GameDescriptionUI>();
+        if (descriptionUI == null)
+            descriptionUI = descriptionPanel.AddComponent<GameDescriptionUI>();
+
+        descriptionUI.Configure(descriptionPaperTexture, ClosePanels);
     }
 
     public void StartGame()
@@ -35,6 +53,12 @@ public sealed class MainMenuUI : MonoBehaviour
     public void OpenDescription()
     {
         GameAudioManager.PlayButtonClick();
+        if (descriptionPanel != null &&
+            descriptionPanel.TryGetComponent(out GameDescriptionUI descriptionUI))
+        {
+            descriptionUI.ShowFirstPage();
+        }
+
         SetOnlyPanel(descriptionPanel);
     }
 
