@@ -4547,6 +4547,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: wood_props_swing_chair
       objectReference: {fileID: 0}
+    - target: {fileID: 1686866358365567155, guid: de339d85e14094f7693e0dce24f5b320, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 2027504592951960073, guid: de339d85e14094f7693e0dce24f5b320, type: 3}
       propertyPath: m_LocalScale.x
       value: 2
