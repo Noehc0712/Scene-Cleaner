@@ -33,6 +33,8 @@ public class EvidenceObject : MonoBehaviour
     [TextArea(2, 4)]
     private string evidenceDescription =
         "프로토타입에서는 Cube로 표현되는 증거물입니다.";
+    [SerializeField]
+    private Sprite resultImage;
 
     [Header("현재 상태")]
 
@@ -89,6 +91,13 @@ public class EvidenceObject : MonoBehaviour
         get
         {
             return evidenceDescription;
+        }
+    }
+    public Sprite ResultImage
+    {
+        get
+        {
+        return resultImage;
         }
     }
 
