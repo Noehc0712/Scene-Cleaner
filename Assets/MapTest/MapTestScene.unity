@@ -1460,6 +1460,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -1615,6 +1616,7 @@ MonoBehaviour:
   isCrimeEvidence: 1
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -2474,6 +2476,7 @@ MonoBehaviour:
   isCrimeEvidence: 1
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -4636,6 +4639,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -5315,6 +5319,7 @@ MonoBehaviour:
   isCrimeEvidence: 1
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 4
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -5908,6 +5913,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 0
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -8010,6 +8016,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -8051,6 +8058,7 @@ MonoBehaviour:
   isCrimeEvidence: 1
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 4
   onClicked:
     m_PersistentCalls:
       m_Calls: []
@@ -8080,6 +8088,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 4
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -9681,6 +9690,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 11
   onClicked:
     m_PersistentCalls:
       m_Calls:
@@ -10737,6 +10747,7 @@ MonoBehaviour:
   isCrimeEvidence: 0
   resultDescription: 
   resultImage: {fileID: 0}
+  allowedCameras: 4
   onClicked:
     m_PersistentCalls:
       m_Calls:
