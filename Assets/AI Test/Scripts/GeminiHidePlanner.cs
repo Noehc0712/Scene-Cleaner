@@ -40,6 +40,15 @@ public class GeminiHidePlanner : MonoBehaviour
     private int requestTimeoutSeconds = 30;
 
 
+    [Header("Gemini 재시도 설정")]
+
+    [SerializeField, Min(1)]
+    private int maximumRequestAttempts = 5;
+
+    [SerializeField, Min(0.5f)]
+    private float retryDelaySeconds = 2f;
+
+
     [Header("최근 Gemini 결과")]
 
     [SerializeField, TextArea(3, 8)]
@@ -49,6 +58,25 @@ public class GeminiHidePlanner : MonoBehaviour
     private string apiKey;
     private bool isRequesting;
 
+
+    // =============================================================
+    // Gemini 배치 성공 이벤트
+    // =============================================================
+
+    /// <summary>
+    /// Gemini가 숨김 계획을 생성하고,
+    /// AIHideController를 통한 실제 Unity 배치까지
+    /// 정상적으로 완료됐을 때 발생한다.
+    ///
+    /// GameFlowManager가 이 이벤트를 받아
+    /// 타이머와 플레이어 행동 기록을 시작한다.
+    /// </summary>
+    public event Action HidePlanSucceeded;
+
+
+    // =============================================================
+    // 외부에서 확인할 수 있는 상태
+    // =============================================================
 
     public int CurrentRound
     {
@@ -70,7 +98,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
     /// <summary>
     /// 가장 최근 Gemini가 반환한
-    /// 숨김 전략 설명이다.
+    /// 숨김 전략 설명.
     ///
     /// 이후 최종 결과 UI에서 사용할 수 있다.
     /// </summary>
@@ -82,6 +110,10 @@ public class GeminiHidePlanner : MonoBehaviour
         }
     }
 
+
+    // =============================================================
+    // Unity 생명주기
+    // =============================================================
 
     private void Awake()
     {
@@ -128,7 +160,7 @@ public class GeminiHidePlanner : MonoBehaviour
     /// 개발 중 2라운드 적응형 숨김을
     /// 바로 테스트하기 위한 메뉴.
     ///
-    /// 이 메뉴를 실행하기 전에는
+    /// 실행하기 전에는
     /// 기존 EvidenceObject / HideZone 상태를
     /// 초기화해야 한다.
     /// </summary>
@@ -211,21 +243,25 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
     /// <summary>
-    /// 이후 GameFlowManager 등에서
+    /// GameFlowManager 등에서
     /// 원하는 라운드를 지정하여 호출할 수 있는 함수.
     /// </summary>
     public IEnumerator RequestHidePlanForRound(
         int roundNumber
     )
     {
-        SetCurrentRound(roundNumber);
+        SetCurrentRound(
+            roundNumber
+        );
 
-        yield return RequestHidePlan();
+
+        yield return
+            RequestHidePlan();
     }
 
 
     // =============================================================
-    // Gemini 요청
+    // Gemini 요청 전체 흐름
     // =============================================================
 
     /// <summary>
@@ -234,6 +270,16 @@ public class GeminiHidePlanner : MonoBehaviour
     /// </summary>
     public IEnumerator RequestHidePlan()
     {
+        if (isRequesting)
+        {
+            Debug.LogWarning(
+                "이미 Gemini 요청을 처리하고 있습니다."
+            );
+
+            yield break;
+        }
+
+
         if (!LoadApiKey())
         {
             yield break;
@@ -262,7 +308,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
         /*
          * 기존 AIHidePromptBuilder가 만드는
-         * 증거물 / HideZone 기본 프롬프트를 가져온다.
+         * 증거물 / HideZone 기본 프롬프트.
          */
         string basePrompt =
             promptBuilder.BuildPrompt();
@@ -280,10 +326,13 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         /*
-         * 현재 라운드에 맞는 추가 지시사항을 붙인다.
+         * 현재 라운드에 맞는
+         * 추가 지시사항을 붙인다.
          */
         string prompt =
-            BuildRoundPrompt(basePrompt);
+            BuildRoundPrompt(
+                basePrompt
+            );
 
 
         if (string.IsNullOrWhiteSpace(prompt))
@@ -301,7 +350,9 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         string requestJson =
-            BuildRequestJson(prompt);
+            BuildRequestJson(
+                prompt
+            );
 
 
         Debug.Log(
@@ -311,8 +362,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         /*
-         * 개발 중에는 Gemini가 실제로 어떤 정보를
-         * 받았는지 확인하기 위해 프롬프트를 출력한다.
+         * 개발 단계 확인용.
          *
          * API Key는 프롬프트 안에 포함되지 않는다.
          */
@@ -322,9 +372,10 @@ public class GeminiHidePlanner : MonoBehaviour
         );
 
 
-        yield return SendRequest(
-            requestJson
-        );
+        yield return
+            SendRequest(
+                requestJson
+            );
 
 
         isRequesting = false;
@@ -347,9 +398,12 @@ public class GeminiHidePlanner : MonoBehaviour
             new StringBuilder();
 
 
-        prompt.AppendLine(basePrompt);
+        prompt.AppendLine(
+            basePrompt
+        );
 
         prompt.AppendLine();
+
 
         prompt.AppendLine(
             "========================================"
@@ -368,12 +422,14 @@ public class GeminiHidePlanner : MonoBehaviour
 
             prompt.AppendLine();
 
+
             prompt.AppendLine(
                 "이번 라운드는 플레이어 행동 데이터가 없는 " +
                 "첫 번째 라운드이다."
             );
 
             prompt.AppendLine();
+
 
             prompt.AppendLine(
                 "특정 장소에 지나치게 편향되지 않도록 " +
@@ -383,6 +439,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
             prompt.AppendLine();
 
+
             prompt.AppendLine(
                 "strategySummary에는 이번 1라운드에서 " +
                 "어떤 기준으로 장소를 선택했는지 " +
@@ -390,7 +447,8 @@ public class GeminiHidePlanner : MonoBehaviour
             );
 
 
-            return prompt.ToString();
+            return
+                prompt.ToString();
         }
 
 
@@ -404,6 +462,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
         prompt.AppendLine();
 
+
         prompt.AppendLine(
             "이번 라운드는 이전 라운드에서 수집한 " +
             "플레이어 행동을 분석하여 숨김 전략을 " +
@@ -414,7 +473,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         /*
-         * PlayerBehaviorSummary 연결 확인
+         * PlayerBehaviorSummary 연결 확인.
          */
         if (playerBehaviorSummary == null)
         {
@@ -445,9 +504,11 @@ public class GeminiHidePlanner : MonoBehaviour
 
         prompt.AppendLine();
 
+
         prompt.AppendLine(
             behaviorSummary
         );
+
 
         prompt.AppendLine(
             "===== 행동 데이터 끝 ====="
@@ -457,7 +518,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         // =========================================================
-        // Gemini가 행동 데이터를 해석하는 기준
+        // Gemini 행동 데이터 해석 기준
         // =========================================================
 
         prompt.AppendLine(
@@ -539,6 +600,11 @@ public class GeminiHidePlanner : MonoBehaviour
 
         prompt.AppendLine();
 
+
+        // =========================================================
+        // 기존 배치 규칙
+        // =========================================================
+
         prompt.AppendLine(
             "[매우 중요한 기존 배치 규칙]"
         );
@@ -574,6 +640,11 @@ public class GeminiHidePlanner : MonoBehaviour
 
         prompt.AppendLine();
 
+
+        // =========================================================
+        // 전략 설명
+        // =========================================================
+
         prompt.AppendLine(
             "[strategySummary 작성 규칙]"
         );
@@ -595,7 +666,8 @@ public class GeminiHidePlanner : MonoBehaviour
         );
 
 
-        return prompt.ToString();
+        return
+            prompt.ToString();
     }
 
 
@@ -674,9 +746,10 @@ public class GeminiHidePlanner : MonoBehaviour
             };
 
 
-        return JsonUtility.ToJson(
-            requestBody
-        );
+        return
+            JsonUtility.ToJson(
+                requestBody
+            );
     }
 
 
@@ -741,12 +814,6 @@ public class GeminiHidePlanner : MonoBehaviour
                         },
 
 
-                    /*
-                     * Gemini가 자신의 배치 전략을
-                     * 한국어 문장으로 설명한다.
-                     *
-                     * 이후 최종 결과 화면에서 사용 가능하다.
-                     */
                     strategySummary =
                         new GeminiHideStringSchema
                         {
@@ -772,7 +839,7 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
     // =============================================================
-    // Gemini HTTP 요청
+    // Gemini HTTP 요청 + 자동 재시도
     // =============================================================
 
     private IEnumerator SendRequest(
@@ -790,85 +857,264 @@ public class GeminiHidePlanner : MonoBehaviour
             );
 
 
-        using (
-            UnityWebRequest request =
-                new UnityWebRequest(
-                    url,
-                    UnityWebRequest.kHttpVerbPOST
-                )
+        // =========================================================
+        // 최대 지정 횟수만큼 Gemini 요청
+        // =========================================================
+
+        for (
+            int attempt = 1;
+            attempt <= maximumRequestAttempts;
+            attempt++
         )
         {
-            request.uploadHandler =
-                new UploadHandlerRaw(
-                    requestBody
+            Debug.Log(
+                "=== Gemini API 요청 ===\n" +
+                $"시도: {attempt}/{maximumRequestAttempts}"
+            );
+
+
+            bool shouldRetry = false;
+
+            float waitSeconds = 0f;
+
+
+            using (
+                UnityWebRequest request =
+                    new UnityWebRequest(
+                        url,
+                        UnityWebRequest.kHttpVerbPOST
+                    )
+            )
+            {
+                request.uploadHandler =
+                    new UploadHandlerRaw(
+                        requestBody
+                    );
+
+
+                request.downloadHandler =
+                    new DownloadHandlerBuffer();
+
+
+                request.timeout =
+                    requestTimeoutSeconds;
+
+
+                request.SetRequestHeader(
+                    "Content-Type",
+                    "application/json"
                 );
 
 
-            request.downloadHandler =
-                new DownloadHandlerBuffer();
+                request.SetRequestHeader(
+                    "x-goog-api-key",
+                    apiKey
+                );
 
 
-            request.timeout =
-                requestTimeoutSeconds;
+                yield return
+                    request.SendWebRequest();
 
 
-            request.SetRequestHeader(
-                "Content-Type",
-                "application/json"
-            );
+                // =================================================
+                // 요청 성공
+                // =================================================
+
+                if (
+                    request.result ==
+                    UnityWebRequest.Result.Success
+                )
+                {
+                    Debug.Log(
+                        "=== Gemini API 요청 성공 ===\n" +
+                        $"시도 횟수: {attempt}/{maximumRequestAttempts}"
+                    );
 
 
-            request.SetRequestHeader(
-                "x-goog-api-key",
-                apiKey
-            );
+                    string responseJson =
+                        request.downloadHandler.text;
 
 
-            yield return request.SendWebRequest();
+                    string planJson =
+                        ExtractResponseText(
+                            responseJson
+                        );
 
 
-            if (request.result !=
-                UnityWebRequest.Result.Success)
-            {
-                Debug.LogError(
-                    "Gemini 숨김 계획 요청 실패\n" +
+                    if (
+                        string.IsNullOrWhiteSpace(
+                            planJson
+                        )
+                    )
+                    {
+                        Debug.LogError(
+                            "Gemini 응답에서 숨김 계획 JSON을 " +
+                            "찾지 못했습니다.\n" +
+                            $"전체 응답:\n{responseJson}"
+                        );
+
+
+                        yield break;
+                    }
+
+
+                    ParseAndApplyPlan(
+                        planJson
+                    );
+
+
+                    /*
+                     * 정상 요청을 받았으므로
+                     * 재시도 반복문 종료.
+                     */
+                    yield break;
+                }
+
+
+                // =================================================
+                // 요청 실패
+                // =================================================
+
+                long responseCode =
+                    request.responseCode;
+
+
+                /*
+                 * 다시 요청하면 해결될 가능성이 있는 오류.
+                 *
+                 * ConnectionError
+                 * → 인터넷 연결 순간 오류
+                 * → Timeout 등
+                 *
+                 * 429
+                 * → 요청이 너무 많음
+                 *
+                 * 500 ~ 599
+                 * → Gemini 서버 문제
+                 * → 이번에 발생한 503 포함
+                 */
+                bool isRetryableError =
+                    request.result ==
+                        UnityWebRequest.Result.ConnectionError ||
+
+                    responseCode == 429 ||
+
+                    (
+                        responseCode >= 500 &&
+                        responseCode <= 599
+                    );
+
+
+                Debug.LogWarning(
+                    "=== Gemini 요청 실패 ===\n" +
+                    $"시도: {attempt}/{maximumRequestAttempts}\n" +
                     $"Result: {request.result}\n" +
-                    $"Code: {request.responseCode}\n" +
+                    $"Code: {responseCode}\n" +
                     $"Message: {request.error}\n" +
+                    $"재시도 가능 오류: {isRetryableError}\n" +
                     $"Body: {request.downloadHandler.text}"
                 );
 
 
-                yield break;
+                // =================================================
+                // 재시도 불가능 오류
+                // =================================================
+
+                /*
+                 * 예:
+                 *
+                 * 400 잘못된 요청
+                 * 401 인증 오류
+                 * 403 권한 오류
+                 *
+                 * 기다려도 해결될 가능성이 낮으므로
+                 * 즉시 중단한다.
+                 */
+                if (!isRetryableError)
+                {
+                    Debug.LogError(
+                        "=== Gemini 요청 최종 실패 ===\n" +
+                        "재시도로 해결할 수 없는 오류입니다.\n" +
+                        $"HTTP Code: {responseCode}"
+                    );
+
+
+                    yield break;
+                }
+
+
+                // =================================================
+                // 마지막 시도도 실패
+                // =================================================
+
+                if (
+                    attempt >=
+                    maximumRequestAttempts
+                )
+                {
+                    Debug.LogError(
+                        "=== Gemini 요청 최종 실패 ===\n" +
+                        $"{maximumRequestAttempts}회 요청했지만 " +
+                        "Gemini 서버에서 정상 응답을 받지 못했습니다."
+                    );
+
+
+                    yield break;
+                }
+
+
+                // =================================================
+                // 다음 요청 준비
+                // =================================================
+
+                /*
+                 * 기본 설정 기준:
+                 *
+                 * 1차 실패
+                 * → 2초 대기
+                 *
+                 * 2차 실패
+                 * → 4초 대기
+                 */
+                waitSeconds =
+                    retryDelaySeconds *
+                    Mathf.Pow(
+                         2f,
+                        attempt - 1
+                    );
+
+
+                shouldRetry =
+                    true;
             }
 
 
-            string responseJson =
-                request.downloadHandler.text;
+            // =====================================================
+            // 다음 요청 전 대기
+            // =====================================================
 
-
-            string planJson =
-                ExtractResponseText(
-                    responseJson
-                );
-
-
-            if (string.IsNullOrWhiteSpace(planJson))
+            /*
+             * UnityWebRequest using 블록을 완전히 종료한 뒤
+             * 기다리도록 분리했다.
+             */
+            if (shouldRetry)
             {
-                Debug.LogError(
-                    "Gemini 응답에서 숨김 계획 JSON을 " +
-                    "찾지 못했습니다.\n" +
-                    $"전체 응답:\n{responseJson}"
+                Debug.Log(
+                    "=== Gemini 요청 자동 재시도 대기 ===\n" +
+                    $"{waitSeconds:F1}초 후 " +
+                    $"{attempt + 1}번째 요청을 시도합니다."
                 );
 
 
-                yield break;
+                /*
+                 * Time.timeScale과 상관없이
+                 * 실제 시간 기준으로 기다린다.
+                 */
+                yield return
+                    new WaitForSecondsRealtime(
+                        waitSeconds
+                    );
             }
-
-
-            ParseAndApplyPlan(
-                planJson
-            );
         }
     }
 
@@ -917,9 +1163,11 @@ public class GeminiHidePlanner : MonoBehaviour
             in firstCandidate.content.parts
         )
         {
-            if (!string.IsNullOrWhiteSpace(
+            if (
+                !string.IsNullOrWhiteSpace(
                     part.text
-                ))
+                )
+            )
             {
                 textBuilder.Append(
                     part.text
@@ -928,9 +1176,10 @@ public class GeminiHidePlanner : MonoBehaviour
         }
 
 
-        return textBuilder
-            .ToString()
-            .Trim();
+        return
+            textBuilder
+                .ToString()
+                .Trim();
     }
 
 
@@ -970,9 +1219,11 @@ public class GeminiHidePlanner : MonoBehaviour
         }
 
 
-        if (plan == null ||
+        if (
+            plan == null ||
             plan.assignments == null ||
-            plan.assignments.Length == 0)
+            plan.assignments.Length == 0
+        )
         {
             Debug.LogError(
                 "Gemini가 숨김 배치 정보를 " +
@@ -1055,10 +1306,19 @@ public class GeminiHidePlanner : MonoBehaviour
         );
 
 
+        // =========================================================
+        // Unity 실제 배치
+        // =========================================================
+
         /*
-         * 기존 AIHideController에서
-         * ID / 중복 / PlacementType / HideZone 상태를
-         * 다시 검증한 뒤 실제 배치를 적용한다.
+         * AIHideController에서
+         *
+         * ID
+         * 중복
+         * PlacementType
+         * HideZone 상태
+         *
+         * 등을 다시 검증한 뒤 실제 배치를 적용한다.
          */
         bool applySucceeded =
             hideController.ApplyHidePlan(
@@ -1078,10 +1338,10 @@ public class GeminiHidePlanner : MonoBehaviour
         }
 
 
-        /*
-         * 배치까지 정상 완료된 경우에만
-         * 최종 전략 설명으로 저장한다.
-         */
+        // =========================================================
+        // 전략 설명 저장
+        // =========================================================
+
         lastStrategySummary =
             plan.strategySummary;
 
@@ -1090,6 +1350,30 @@ public class GeminiHidePlanner : MonoBehaviour
             "=== Gemini 숨김 계획 적용 완료 ===\n" +
             $"라운드: {currentRound}\n" +
             $"전략: {lastStrategySummary}"
+        );
+
+
+        // =========================================================
+        // GameFlowManager에게 성공 알림
+        // =========================================================
+
+        /*
+         * 여기까지 왔다는 것은:
+         *
+         * 1. Gemini 요청 성공
+         * 2. JSON 응답 성공
+         * 3. JSON 파싱 성공
+         * 4. 배치 계획 검증 성공
+         * 5. EvidenceObject 실제 이동 성공
+         * 6. CCTV 조사 결과 연결 성공
+         *
+         * 이 모든 과정이 끝났다는 뜻이다.
+         */
+        HidePlanSucceeded?.Invoke();
+
+
+        Debug.Log(
+            "=== Gemini 배치 성공 신호 발생 ==="
         );
 
 
@@ -1111,6 +1395,7 @@ public class GeminiHidePlanner : MonoBehaviour
 public class GeminiHideGenerateContentRequest
 {
     public GeminiHideRequestContent[] contents;
+
     public GeminiHideGenerationConfig generationConfig;
 }
 
@@ -1133,7 +1418,9 @@ public class GeminiHideRequestPart
 public class GeminiHideGenerationConfig
 {
     public string responseMimeType;
+
     public float temperature;
+
     public GeminiHideResponseSchema responseSchema;
 }
 
@@ -1142,7 +1429,9 @@ public class GeminiHideGenerationConfig
 public class GeminiHideResponseSchema
 {
     public string type;
+
     public GeminiHideRootProperties properties;
+
     public string[] required;
 }
 
@@ -1160,6 +1449,7 @@ public class GeminiHideRootProperties
 public class GeminiHideArraySchema
 {
     public string type;
+
     public GeminiHideAssignmentSchema items;
 }
 
@@ -1168,7 +1458,9 @@ public class GeminiHideArraySchema
 public class GeminiHideAssignmentSchema
 {
     public string type;
+
     public GeminiHideAssignmentProperties properties;
+
     public string[] required;
 }
 
@@ -1177,6 +1469,7 @@ public class GeminiHideAssignmentSchema
 public class GeminiHideAssignmentProperties
 {
     public GeminiHideStringSchema evidenceId;
+
     public GeminiHideStringSchema hideZoneId;
 }
 
@@ -1185,6 +1478,7 @@ public class GeminiHideAssignmentProperties
 public class GeminiHideStringSchema
 {
     public string type;
+
     public string description;
 }
 
@@ -1234,6 +1528,7 @@ public class AIHidePlan
 {
     public AIHideAssignment[] assignments;
 
+
     /*
      * Gemini가 이번 배치 전략을
      * 설명하는 한국어 문장.
@@ -1246,5 +1541,6 @@ public class AIHidePlan
 public class AIHideAssignment
 {
     public string evidenceId;
+
     public string hideZoneId;
 }

@@ -3,10 +3,12 @@ using UnityEngine;
 public class AIRoundResetController : MonoBehaviour
 {
     /// <summary>
-    /// 다음 라운드의 AI 재배치를 위해
-    /// EvidenceObject, HideZone, CCTVInteractable 상태를 초기화한다.
+    /// 다음 라운드 시작을 위해
+    /// AI 배치 상태와 플레이어 조사 UI를 초기화한다.
     ///
-    /// 플레이어의 1라운드 행동 기록은 삭제하지 않는다.
+    /// 주의:
+    /// 1라운드 플레이어 행동 기록은 삭제하지 않는다.
+    /// 이 데이터는 2라운드 Gemini 적응형 배치에 사용된다.
     /// </summary>
     public void ResetRoundState()
     {
@@ -41,7 +43,7 @@ public class AIRoundResetController : MonoBehaviour
 
 
         // =========================================================
-        // 4. 증거물 상태 초기화
+        // 4. EvidenceObject 상태 초기화
         // =========================================================
 
         foreach (EvidenceObject evidence in evidenceObjects)
@@ -80,16 +82,32 @@ public class AIRoundResetController : MonoBehaviour
 
 
         // =========================================================
-        // 7. 결과 로그
+        // 7. 탐사 기회 5회 초기화
+        // =========================================================
+
+        CCTVInspectionUI.ResetAttempts();
+
+
+        // =========================================================
+        // 8. 단서 인벤토리 초기화
+        // =========================================================
+
+        EvidenceInventoryUI.ResetInventory();
+
+
+        // =========================================================
+        // 9. 완료 로그
         // =========================================================
 
         Debug.Log(
-            "=== AI 라운드 상태 초기화 완료 ===\n" +
+            "=== 라운드 전체 상태 초기화 완료 ===\n" +
             $"초기화된 증거물 수: {evidenceObjects.Length}\n" +
             $"초기화된 HideZone 수: {hideZones.Length}\n" +
             $"초기화된 조사 장소 수: {interactables.Length}\n" +
-            "플레이어 행동 기록은 유지됩니다.\n" +
-            "다음 AI 숨김 계획을 적용할 수 있습니다."
+            "탐사 기회: 5회로 초기화\n" +
+            "증거 인벤토리: 초기화 완료\n" +
+            "플레이어 행동 기록: 유지\n" +
+            "다음 Gemini 숨김 계획을 적용할 수 있습니다."
         );
     }
 
