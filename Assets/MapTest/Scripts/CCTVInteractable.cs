@@ -5,6 +5,7 @@ using UnityEngine.Events;
 public sealed class CCTVInteractable : MonoBehaviour
 {
     [Header("Investigation")]
+
     [SerializeField]
     private string displayName = "수상한 물건";
 
@@ -19,6 +20,7 @@ public sealed class CCTVInteractable : MonoBehaviour
 
 
     [Header("Events")]
+
     [SerializeField]
     private UnityEvent onClicked;
 
@@ -31,19 +33,24 @@ public sealed class CCTVInteractable : MonoBehaviour
 
     public Sprite ResultImage => resultImage;
 
-    public bool IsInvestigated { get; private set; }
+    public bool IsInvestigated
+    {
+        get;
+        private set;
+    }
 
 
     /// <summary>
-    /// 플레이어가 CCTV 화면에서 이 장소를 클릭했을 때
-    /// 조사 UI를 연다.
+    /// 플레이어가 이 장소를 클릭했을 때
+    /// 조사 확인 UI를 연다.
     /// </summary>
     public void Interact()
     {
         if (!CCTVInspectionUI.TryOpen(this))
         {
             Debug.LogWarning(
-                "CCTV Inspection UI가 씬에 없거나 설정되지 않았습니다.",
+                "CCTV Inspection UI가 씬에 없거나 " +
+                "설정되지 않았습니다.",
                 this
             );
         }
@@ -53,38 +60,32 @@ public sealed class CCTVInteractable : MonoBehaviour
     /// <summary>
     /// 플레이어가 조사 확인 버튼을 눌러
     /// 실제 조사를 완료했을 때 호출된다.
-    ///
-    /// 이 시점에:
-    /// 1. 조사 완료 상태 변경
-    /// 2. 플레이어 행동 기록
-    /// 3. 실제 단서라면 인벤토리에 이미지 추가
-    /// 4. 기존 UnityEvent 실행
-    /// 을 처리한다.
     /// </summary>
     public void CompleteInvestigation()
     {
         /*
          * 이미 조사한 장소라면
-         * 같은 행동을 두 번 기록하지 않는다.
+         * 다시 처리하지 않는다.
          */
         if (IsInvestigated)
         {
             return;
         }
 
+
         IsInvestigated = true;
 
 
         // =========================================================
-        // 1. 이번 조사 결과가
-        //    Clue / Decoy / Empty 중 무엇인지 판단
+        // 조사 결과 종류 판단
         // =========================================================
 
         InvestigationResultType resultType;
 
+
         /*
-         * 이미지 자체가 없다면
-         * AI가 아무 증거물도 배치하지 않은 빈 장소이다.
+         * 이미지가 없다면
+         * AI가 아무것도 배치하지 않은 빈 장소이다.
          */
         if (resultImage == null)
         {
@@ -93,8 +94,7 @@ public sealed class CCTVInteractable : MonoBehaviour
         }
 
         /*
-         * 이미지가 있고,
-         * 실제 범죄 단서로 지정된 경우
+         * 이미지가 있고 실제 범죄 단서라면 Clue.
          */
         else if (isCrimeEvidence)
         {
@@ -103,8 +103,7 @@ public sealed class CCTVInteractable : MonoBehaviour
         }
 
         /*
-         * 이미지가 있지만
-         * 실제 범죄 단서가 아니라면 미끼이다.
+         * 이미지가 있지만 범죄 단서가 아니라면 Decoy.
          */
         else
         {
@@ -114,7 +113,7 @@ public sealed class CCTVInteractable : MonoBehaviour
 
 
         // =========================================================
-        // 2. 이 조사 장소의 HideZone 찾기
+        // 플레이어 조사 행동 기록
         // =========================================================
 
         HideZone hideZone =
@@ -131,11 +130,6 @@ public sealed class CCTVInteractable : MonoBehaviour
         }
         else
         {
-            // =====================================================
-            // 3. 씬의 PlayerActionRecorder를 찾아
-            //    실제 조사 행동 저장
-            // =====================================================
-
             PlayerActionRecorder recorder =
                 FindFirstObjectByType<PlayerActionRecorder>();
 
@@ -159,8 +153,7 @@ public sealed class CCTVInteractable : MonoBehaviour
 
 
         // =========================================================
-        // 4. 실제 범죄 단서(Clue)라면
-        //    기존 인벤토리에 이미지 추가
+        // 실제 단서라면 인벤토리에 추가
         // =========================================================
 
         if (isCrimeEvidence)
@@ -171,28 +164,21 @@ public sealed class CCTVInteractable : MonoBehaviour
         }
 
 
-        // =========================================================
-        // 5. 팀원이 기존에 연결해 둔 이벤트 실행
-        // =========================================================
-
         onClicked?.Invoke();
     }
 
 
     /// <summary>
-    /// AI가 HideZone에 EvidenceObject를 배치한 뒤
-    /// 해당 증거물의 결과 정보를
-    /// CCTVInteractable에 자동으로 연결한다.
+    /// Gemini가 HideZone에 배치한 EvidenceObject의
+    /// 조사 결과를 이 CCTVInteractable에 연결한다.
     ///
-    /// evidence가 null이면 빈 조사 장소로 설정한다.
+    /// evidence가 null이면
+    /// 아무 증거물도 없는 빈 조사 장소로 설정한다.
     /// </summary>
     public void SetInvestigationResult(
         EvidenceObject evidence
     )
     {
-        /*
-         * 아무 증거물도 배치되지 않은 장소
-         */
         if (evidence == null)
         {
             isCrimeEvidence = false;
@@ -206,22 +192,33 @@ public sealed class CCTVInteractable : MonoBehaviour
         }
 
 
-        /*
-         * 실제 범죄 단서인지 미끼인지 설정
-         */
         isCrimeEvidence =
             evidence.EvidenceType ==
             EvidenceType.Clue;
 
 
-        /*
-         * 같은 EvidenceObject에 저장된
-         * 설명과 이미지를 사용한다.
-         */
         resultDescription =
             evidence.EvidenceDescription;
 
+
         resultImage =
             evidence.ResultImage;
+    }
+
+
+    /// <summary>
+    /// 새로운 라운드가 시작되기 전에
+    /// 이 장소의 조사 완료 상태를 초기화한다.
+    ///
+    /// 1라운드에서 이미 조사했던 장소도
+    /// 2라운드에서는 다시 조사할 수 있게 된다.
+    ///
+    /// 여기서는 조사 결과 이미지나 설명은 건드리지 않는다.
+    /// 그것들은 AIHideController가 새로운 AI 배치를
+    /// 적용하면서 다시 설정한다.
+    /// </summary>
+    public void ResetInvestigation()
+    {
+        IsInvestigated = false;
     }
 }
