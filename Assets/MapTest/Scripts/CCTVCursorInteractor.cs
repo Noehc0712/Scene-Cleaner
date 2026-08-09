@@ -141,8 +141,18 @@ public sealed class CCTVCursorInteractor : MonoBehaviour
         }
 
 
-        return hit.collider
+        CCTVInteractable interactable = hit.collider
             .GetComponentInParent<CCTVInteractable>();
+
+        if (interactable == null ||
+            !interactable.CanInteractFromCamera(
+                CCTVSwitcher.CurrentCameraNumber
+            ))
+        {
+            return null;
+        }
+
+        return interactable;
     }
 
 

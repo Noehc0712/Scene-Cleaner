@@ -1,9 +1,21 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
 [DisallowMultipleComponent]
 public sealed class CCTVInteractable : MonoBehaviour
 {
+    [Flags]
+    private enum CameraAccess
+    {
+        None = 0,
+        CCTV01 = 1 << 0,
+        CCTV02 = 1 << 1,
+        CCTV03 = 1 << 2,
+        CCTV04 = 1 << 3,
+        All = CCTV01 | CCTV02 | CCTV03 | CCTV04
+    }
+
     [Header("Investigation")]
 
     [SerializeField]
@@ -17,6 +29,12 @@ public sealed class CCTVInteractable : MonoBehaviour
 
     [SerializeField]
     private Sprite resultImage;
+
+
+    [Header("Camera Access")]
+
+    [SerializeField]
+    private CameraAccess allowedCameras = CameraAccess.All;
 
 
     [Header("Events")]
@@ -40,12 +58,33 @@ public sealed class CCTVInteractable : MonoBehaviour
     }
 
 
+    public bool CanInteractFromCamera(int cameraNumber)
+    {
+        if (cameraNumber is < 1 or > 4)
+        {
+            return false;
+        }
+
+        CameraAccess activeCamera =
+            (CameraAccess)(1 << (cameraNumber - 1));
+
+        return (allowedCameras & activeCamera) != 0;
+    }
+
+
     /// <summary>
     /// 플레이어가 이 장소를 클릭했을 때
     /// 조사 확인 UI를 연다.
     /// </summary>
     public void Interact()
     {
+        if (!CanInteractFromCamera(
+                CCTVSwitcher.CurrentCameraNumber
+            ))
+        {
+            return;
+        }
+
         if (!CCTVInspectionUI.TryOpen(this))
         {
             Debug.LogWarning(
