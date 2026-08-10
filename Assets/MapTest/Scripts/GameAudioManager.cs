@@ -153,6 +153,11 @@ public sealed class GameAudioManager : MonoBehaviour
         instance?.PlayEffect(instance.buttonClickSound);
     }
 
+    public static void PlayCustomEffect(AudioClip clip)
+    {
+        instance?.PlayEffect(clip);
+    }
+
     private void PlayEffect(AudioClip clip)
     {
         if (clip != null)

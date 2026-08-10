@@ -29,6 +29,7 @@ public sealed class GameDescriptionUI : MonoBehaviour
 
     [Header("Layout")]
     [SerializeField] private Texture paperTexture;
+    [SerializeField] private AudioClip pageTurnSound;
     [SerializeField] private Vector2 paperSize = new(980f, 820f);
     [SerializeField] private Color inkColor = new(0.15f, 0.12f, 0.09f, 1f);
 
@@ -58,10 +59,12 @@ public sealed class GameDescriptionUI : MonoBehaviour
         closeButton?.onClick.AddListener(Close);
     }
 
-    public void Configure(Texture texture, Action onClose)
+    public void Configure(Texture texture, AudioClip turnSound, Action onClose)
     {
         if (texture != null)
             paperTexture = texture;
+        if (turnSound != null)
+            pageTurnSound = turnSound;
         closeAction = onClose;
 
     }
@@ -243,7 +246,7 @@ public sealed class GameDescriptionUI : MonoBehaviour
 
     private void ShowControlsPage()
     {
-        GameAudioManager.PlayButtonClick();
+        PlayPageTurnSound();
 
         if (worldPage != null && controlsPage != null)
             ShowPage(controlsPage);
@@ -251,8 +254,16 @@ public sealed class GameDescriptionUI : MonoBehaviour
 
     private void ShowPreviousPage()
     {
-        GameAudioManager.PlayButtonClick();
+        PlayPageTurnSound();
         ShowFirstPage();
+    }
+
+    private void PlayPageTurnSound()
+    {
+        if (pageTurnSound != null)
+            GameAudioManager.PlayCustomEffect(pageTurnSound);
+        else
+            GameAudioManager.PlayButtonClick();
     }
 
     private bool ResolveBakedReferences()

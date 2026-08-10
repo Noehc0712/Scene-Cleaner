@@ -9,6 +9,7 @@ public sealed class MainMenuUI : MonoBehaviour
     [Header("Menu Audio")]
     [SerializeField] private AudioClip backgroundMusic;
     [SerializeField] private AudioClip buttonClickSound;
+    [SerializeField] private AudioClip pageTurnSound;
     [SerializeField, Range(0f, 1f)] private float backgroundMusicVolume = 0.25f;
     [SerializeField, Range(0f, 1f)] private float buttonClickVolume = 0.7f;
 
@@ -20,6 +21,10 @@ public sealed class MainMenuUI : MonoBehaviour
     [Header("Game Description")]
     [SerializeField] private Texture descriptionPaperTexture;
 
+    [Header("Menu Cursor")]
+    [SerializeField] private Texture2D menuCursor;
+    [SerializeField] private Vector2 menuCursorHotspot;
+
     private void Awake()
     {
         GameAudioManager.ConfigurePersistentAudio(
@@ -27,6 +32,11 @@ public sealed class MainMenuUI : MonoBehaviour
             buttonClickSound,
             backgroundMusicVolume,
             buttonClickVolume);
+
+        Cursor.SetCursor(
+            menuCursor,
+            menuCursorHotspot,
+            CursorMode.Auto);
 
         ConfigureGameDescription();
     }
@@ -41,7 +51,10 @@ public sealed class MainMenuUI : MonoBehaviour
         if (descriptionUI == null)
             descriptionUI = descriptionPanel.AddComponent<GameDescriptionUI>();
 
-        descriptionUI.Configure(descriptionPaperTexture, ClosePanels);
+        descriptionUI.Configure(
+            descriptionPaperTexture,
+            pageTurnSound,
+            ClosePanels);
     }
 
     public void StartGame()
