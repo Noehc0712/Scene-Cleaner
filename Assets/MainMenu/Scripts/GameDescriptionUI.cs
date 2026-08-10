@@ -54,7 +54,7 @@ public sealed class GameDescriptionUI : MonoBehaviour
 
         ResolveBakedReferences();
         nextButton?.onClick.AddListener(ShowControlsPage);
-        previousButton?.onClick.AddListener(ShowFirstPage);
+        previousButton?.onClick.AddListener(ShowPreviousPage);
         closeButton?.onClick.AddListener(Close);
     }
 
@@ -243,8 +243,16 @@ public sealed class GameDescriptionUI : MonoBehaviour
 
     private void ShowControlsPage()
     {
+        GameAudioManager.PlayButtonClick();
+
         if (worldPage != null && controlsPage != null)
             ShowPage(controlsPage);
+    }
+
+    private void ShowPreviousPage()
+    {
+        GameAudioManager.PlayButtonClick();
+        ShowFirstPage();
     }
 
     private bool ResolveBakedReferences()
