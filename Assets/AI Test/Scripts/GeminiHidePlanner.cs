@@ -40,6 +40,13 @@ public class GeminiHidePlanner : MonoBehaviour
     private int requestTimeoutSeconds = 30;
 
 
+    [Header("WebGL 설정")]
+
+    [SerializeField]
+    private string webProxyUrl =
+        "https://scene-cleaner-proxy.vercel.app/api/gemini";
+
+
     [Header("Gemini 재시도 설정")]
 
     [SerializeField, Min(1)]
@@ -672,11 +679,44 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
     // =============================================================
-    // API Key
+    // API Key / WebGL 프록시 확인
     // =============================================================
 
     private bool LoadApiKey()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+
+        /*
+         * WebGL에서는 Windows 사용자 환경변수에
+         * 접근할 수 없다.
+         *
+         * 대신 Vercel 프록시 서버가
+         * GEMINI_API_KEY를 안전하게 보관하고
+         * Gemini API를 호출한다.
+         */
+        if (string.IsNullOrWhiteSpace(webProxyUrl))
+        {
+            Debug.LogError(
+                "WebGL Gemini 프록시 URL이 설정되지 않았습니다."
+            );
+
+            return false;
+        }
+
+
+        Debug.Log(
+            "WebGL 빌드: Vercel Gemini 프록시를 사용합니다."
+        );
+
+
+        return true;
+
+#else
+
+        /*
+         * Unity Editor 및 일반 PC 실행에서는
+         * 기존 Windows 사용자 환경변수를 그대로 사용한다.
+         */
         apiKey =
             Environment.GetEnvironmentVariable(
                 "GEMINI_API_KEY",
@@ -700,6 +740,8 @@ public class GeminiHidePlanner : MonoBehaviour
 
 
         return true;
+
+#endif
     }
 
 
@@ -846,9 +888,28 @@ public class GeminiHidePlanner : MonoBehaviour
         string requestJson
     )
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+
+        /*
+         * WebGL에서는 Gemini API에 직접 요청하지 않는다.
+         *
+         * API Key가 노출되지 않도록
+         * Vercel 프록시 서버로 요청을 보낸다.
+         */
+        string url =
+            webProxyUrl;
+
+#else
+
+        /*
+         * Unity Editor에서는
+         * 기존 Gemini API 직접 호출 방식을 그대로 사용한다.
+         */
         string url =
             "https://generativelanguage.googleapis.com/" +
             $"v1beta/models/{modelName}:generateContent";
+
+#endif
 
 
         byte[] requestBody =
@@ -906,10 +967,28 @@ public class GeminiHidePlanner : MonoBehaviour
                 );
 
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+
+                /*
+                 * WebGL에서는 API Key를 요청에 넣지 않는다.
+                 *
+                 * Gemini API Key는
+                 * Vercel 환경변수에만 저장되어 있다.
+                 */
+
+#else
+
+                /*
+                 * Editor에서는 기존 방식대로
+                 * Windows 환경변수에서 읽은 API Key를
+                 * Gemini 요청 Header에 넣는다.
+                 */
                 request.SetRequestHeader(
                     "x-goog-api-key",
                     apiKey
                 );
+
+#endif
 
 
                 yield return
@@ -990,8 +1069,8 @@ public class GeminiHidePlanner : MonoBehaviour
                  * → 요청이 너무 많음
                  *
                  * 500 ~ 599
-                 * → Gemini 서버 문제
-                 * → 이번에 발생한 503 포함
+                 * → Gemini 서버 또는 프록시 서버 문제
+                 * → 503 포함
                  */
                 bool isRetryableError =
                     request.result ==
@@ -1075,11 +1154,17 @@ public class GeminiHidePlanner : MonoBehaviour
                  *
                  * 2차 실패
                  * → 4초 대기
+                 *
+                 * 3차 실패
+                 * → 8초 대기
+                 *
+                 * 4차 실패
+                 * → 16초 대기
                  */
                 waitSeconds =
                     retryDelaySeconds *
                     Mathf.Pow(
-                         2f,
+                        2f,
                         attempt - 1
                     );
 
